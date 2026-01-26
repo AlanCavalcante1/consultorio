@@ -1,0 +1,61 @@
+openapi: 3.0.3
+info:
+  title: Consultorio API
+  version: 1.0.0
+
+paths:
+  /employees:
+    post:
+      tags:
+        - Employee
+      summary: Cadastra um novo funcionário
+      operationId: createEmployee
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeDto'
+      responses:
+        '201':
+          description: Criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeResponseDto'
+
+components:
+  schemas:
+    CreateEmployeeDto:
+      type: object
+      required:
+        - name
+        - cpf
+        - employeeType
+        - password
+        - passwordConfirmation
+      properties:
+        name:
+          type: string
+        cpf:
+          type: string
+          pattern: '\d{11}'
+          x-field-extra-annotation: "@org.hibernate.validator.constraints.br.CPF"
+        employeeType:
+          type: string
+          enum: [ADMIN, DOCTOR, NURSE, RECEPTIONIST]
+        password:
+          type: string
+          minLength: 6
+        passwordConfirmation:
+            type: string
+            minLength: 6
+
+    EmployeeResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        # ... outros campos
