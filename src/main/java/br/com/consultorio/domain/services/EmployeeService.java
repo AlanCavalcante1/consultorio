@@ -2,24 +2,53 @@ package br.com.consultorio.domain.services;
 
 import br.com.consultorio.api.dto.CreateEmployeeDto;
 import br.com.consultorio.api.dto.EmployeeResponseDto;
+import br.com.consultorio.api.dto.LoginDto;
+import br.com.consultorio.api.dto.LoginResponseDto;
 import br.com.consultorio.api.mappers.EmployeeMapper;
 import br.com.consultorio.domain.repositories.EmployeeRepository;
+import br.com.consultorio.infra.exception.CpfAlreadyExistsException;
+import br.com.consultorio.infra.exception.InvalidCredentialsException;
 import br.com.consultorio.infra.exception.PasswordMismatchException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
 public class EmployeeService {
-	private final EmployeeRepository employeeRepository;
-	private final EmployeeMapper employeeMapper;
+  private final EmployeeRepository employeeRepository;
+  private final EmployeeMapper employeeMapper;
+  private final PasswordEncoder passwordEncoder;
+  private final TokenService tokenService;
 
-	public EmployeeResponseDto createEmployee(CreateEmployeeDto dto) {
-		if (!dto.getPassword().equals(dto.getPasswordConfirmation())) {
-			throw new PasswordMismatchException("A senha e a confirmação de senha não coincidem.");
-		}
-		var employee = employeeMapper.toEntity(dto);
-		employeeRepository.save(employee);
-		return employeeMapper.toResponse(employee);
-	}
+  public EmployeeResponseDto createEmployee(CreateEmployeeDto dto) {
+    if (!dto.getPassword().equals(dto.getPasswordConfirmation())) {
+      throw new PasswordMismatchException("PasswordConfirmation does not match Password");
+    }
+
+    if (employeeRepository.existsByCpf(dto.getCpf())) {
+      throw new CpfAlreadyExistsException("CPF already exists");
+    }
+
+    var employee = employeeMapper.toEntity(dto, passwordEncoder);
+    employeeRepository.save(employee);
+    return employeeMapper.toResponse(employee);
+  }
+
+  public LoginResponseDto login(LoginDto dto) {
+    var employee =
+        employeeRepository.findByCpf(dto.getCpf()).orElseThrow(InvalidCredentialsException::new);
+
+    if (!passwordEncoder.matches(dto.getPassword(), employee.getPassword())) {
+      throw new InvalidCredentialsException();
+    }
+
+    var token = tokenService.generateToken(employee);
+
+    LoginResponseDto response = new LoginResponseDto();
+    response.setToken(token);
+    response.setType("Bearer"); // Padrão OAuth2
+
+    return response;
+  }
 }

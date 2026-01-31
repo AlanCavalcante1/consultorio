@@ -3,7 +3,37 @@ info:
   title: Consultorio API
   version: 1.0.0
 
+tags:
+  - name: Employee
+    description: Gerenciamento de funcionários
+  - name: Auth
+    description: Autenticação e Login
+
 paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Autentica um usuário e retorna um token JWT
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponseDto'
+        '401':
+          description: Credenciais inválidas (Usuário ou senha incorretos)
+        '400':
+          description: Dados de entrada inválidos
+
   /employees:
     post:
       tags:
@@ -11,6 +41,7 @@ paths:
       summary: Cadastra um novo funcionário
       operationId: createEmployee
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -22,9 +53,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmployeeResponseDto'
+        '400':
+          description: Erro de validação ou senha incorreta
+        '409':
+          description: Conflito (CPF já existe)
 
 components:
   schemas:
+    LoginDto:
+      type: object
+      required:
+        - cpf
+        - password
+      properties:
+        cpf:
+          type: string
+          description: CPF sem pontuação
+          example: "12345678900"
+        password:
+          type: string
+          description: Senha do usuário
+          example: "123456"
+
+    LoginResponseDto:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token de acesso (JWT)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        type:
+          type: string
+          description: Tipo do token
+          example: "Bearer"
+
+    # --- DTOs DE EMPLOYEE ---
     CreateEmployeeDto:
       type: object
       required:
@@ -39,16 +102,16 @@ components:
         cpf:
           type: string
           pattern: '\d{11}'
-          x-field-extra-annotation: "@org.hibernate.validator.constraints.br.CPF"
+          x-field-extra-annotation: "@org.hibernate.validator.constraints.br.CPF(message = \"The provided CPF is invalid.\")"
         employeeType:
           type: string
-          enum: [ADMIN, DOCTOR, NURSE, RECEPTIONIST]
+          enum: [ ADMIN, DOCTOR, NURSE, RECEPTIONIST ]
         password:
           type: string
           minLength: 6
         passwordConfirmation:
-            type: string
-            minLength: 6
+          type: string
+          minLength: 6
 
     EmployeeResponseDto:
       type: object
@@ -58,4 +121,8 @@ components:
           format: int64
         name:
           type: string
-        # ... outros campos
+        cpf:
+          type: string
+        employeeType:
+          type: string
+          enum: [ ADMIN, DOCTOR, NURSE, RECEPTIONIST ]

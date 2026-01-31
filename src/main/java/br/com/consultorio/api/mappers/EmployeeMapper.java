@@ -7,21 +7,21 @@ import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Mapper(componentModel = "spring")
 public interface EmployeeMapper {
 
-	@Mapping(target = "id", ignore = true)
-	@Mapping(target = "createdAt", ignore = true)
-	@Mapping(target = "updatedAt", ignore = true)
-	@Mapping(target = "password", source = "password")
-	Employee toEntity(CreateEmployeeDto dto);
+  @Mapping(target = "id", ignore = true)
+  @Mapping(target = "createdAt", ignore = true)
+  @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "password", source = "password", qualifiedByName = "encryptPassword")
+  Employee toEntity(CreateEmployeeDto dto, @Context PasswordEncoder passwordEncoder);
 
-	EmployeeResponseDto toResponse(Employee entity);
+  EmployeeResponseDto toResponse(Employee entity);
 
-//	@Named("encryptPassword")
-//	default String encryptPassword(String password, @Context PasswordEncoder passwordEncoder) {
-//		return passwordEncoder.encode(password);
-//	}
+  @Named("encryptPassword")
+  default String encryptPassword(String password, @Context PasswordEncoder passwordEncoder) {
+    return passwordEncoder.encode(password);
+  }
 }
