@@ -10,11 +10,13 @@ import br.com.consultorio.infra.exception.CpfAlreadyExistsException;
 import br.com.consultorio.infra.exception.InvalidCredentialsException;
 import br.com.consultorio.infra.exception.PasswordMismatchException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class EmployeeService {
   private final EmployeeRepository employeeRepository;
   private final EmployeeMapper employeeMapper;
@@ -22,6 +24,16 @@ public class EmployeeService {
   private final TokenService tokenService;
 
   public EmployeeResponseDto createEmployee(CreateEmployeeDto dto) {
+    log.info("Iniciando cadastro do {}. Tipo: {}", dto.getCpf(), dto.getEmployeeType());
+    validateCredentials(dto);
+    var employee = employeeMapper.toEntity(dto, passwordEncoder);
+    employeeRepository.save(employee);
+    log.info(
+        "Funcionário cadastrado com sucesso. ID: {}, CPF: {}", employee.getId(), employee.getCpf());
+    return employeeMapper.toResponse(employee);
+  }
+
+  private void validateCredentials(CreateEmployeeDto dto) {
     if (!dto.getPassword().equals(dto.getPasswordConfirmation())) {
       throw new PasswordMismatchException("PasswordConfirmation does not match Password");
     }
@@ -29,10 +41,6 @@ public class EmployeeService {
     if (employeeRepository.existsByCpf(dto.getCpf())) {
       throw new CpfAlreadyExistsException("CPF already exists");
     }
-
-    var employee = employeeMapper.toEntity(dto, passwordEncoder);
-    employeeRepository.save(employee);
-    return employeeMapper.toResponse(employee);
   }
 
   public LoginResponseDto login(LoginDto dto) {
@@ -44,7 +52,6 @@ public class EmployeeService {
     }
 
     var token = tokenService.generateToken(employee);
-
     LoginResponseDto response = new LoginResponseDto();
     response.setToken(token);
     response.setType("Bearer"); // Padrão OAuth2

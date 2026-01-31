@@ -3,6 +3,7 @@ package br.com.consultorio.infra.exception;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -19,6 +21,7 @@ public class GlobalExceptionHandler {
         .getFieldErrors()
         .forEach(error -> fields.put(error.getField(), error.getDefaultMessage()));
 
+    log.error("Erro inesperado no sistema: ", ex);
     return buildErrorResponse(HttpStatus.BAD_REQUEST, fields);
   }
 
@@ -26,20 +29,25 @@ public class GlobalExceptionHandler {
   public ResponseEntity<Object> handlePasswordMismatch(PasswordMismatchException ex) {
     Map<String, String> fields = new HashMap<>();
     fields.put("passwordConfirmation", ex.getMessage());
+    log.info(
+        "password nao corresponde a passwordConfirmation: Campo=passwordConfirmation, Msg={}",
+        ex.getMessage());
     return buildErrorResponse(HttpStatus.BAD_REQUEST, fields);
   }
 
   @ExceptionHandler(CpfAlreadyExistsException.class)
-  public ResponseEntity<Object> handlePasswordMismatch(CpfAlreadyExistsException ex) {
+  public ResponseEntity<Object> handleCpfAlreadyExists(CpfAlreadyExistsException ex) {
     Map<String, String> fields = new HashMap<>();
     fields.put("cpf", ex.getMessage());
-    return buildErrorResponse(HttpStatus.BAD_REQUEST, fields);
+    log.info("Tentativa de duplicidade: Campo=cpf, Msg={}", ex.getMessage());
+    return buildErrorResponse(HttpStatus.CONFLICT, fields);
   }
 
   @ExceptionHandler(InvalidCredentialsException.class)
   public ResponseEntity<Object> handleInvalidCredentials(InvalidCredentialsException ex) {
     Map<String, String> fields = new HashMap<>();
     fields.put("login", ex.getMessage());
+    log.error("Usuario ou Senha incorretos: ", ex);
     return buildErrorResponse(HttpStatus.UNAUTHORIZED, fields);
   }
 
