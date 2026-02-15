@@ -24,7 +24,7 @@ public class EmployeeService {
   private final TokenService tokenService;
 
   public EmployeeResponseDto createEmployee(CreateEmployeeDto dto) {
-    log.info("Iniciando cadastro do {}. Tipo: {}", dto.getCpf(), dto.getEmployeeType());
+    log.info("Iniciando cadastro Employee {}. Tipo: {}", dto.getCpf(), dto.getEmployeeType());
     validateCredentials(dto);
     var employee = employeeMapper.toEntity(dto, passwordEncoder);
     employeeRepository.save(employee);
@@ -52,7 +52,7 @@ public class EmployeeService {
     }
 
     var token = tokenService.generateToken(employee);
-    LoginResponseDto response = new LoginResponseDto();
+    var response = new LoginResponseDto();
     response.setToken(token);
     response.setType("Bearer"); // Padrão OAuth2
 

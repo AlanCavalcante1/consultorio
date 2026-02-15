@@ -7,7 +7,6 @@ import br.com.consultorio.domain.services.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 @RequiredArgsConstructor
@@ -16,7 +15,6 @@ public class EmployeeController implements EmployeeApi {
   private final EmployeeService employeeService;
 
   @Override
-  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<EmployeeResponseDto> createEmployee(CreateEmployeeDto dto) {
     EmployeeResponseDto response = employeeService.createEmployee(dto);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);

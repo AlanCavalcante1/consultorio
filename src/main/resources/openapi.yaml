@@ -8,6 +8,8 @@ tags:
     description: Gerenciamento de funcionários
   - name: Auth
     description: Autenticação e Login
+  - name: Patient
+    description: Gerenciamento de pacientes
 
 paths:
   /auth/login:
@@ -57,8 +59,40 @@ paths:
           description: Erro de validação ou senha incorreta
         '409':
           description: Conflito (CPF já existe)
+  /patients:
+    post:
+      tags:
+        - Patient
+      summary: Cadastra um novo paciente
+      operationId: createPatient
+      security:
+        - bearerAuth: [ ] # Requer autenticação via Bearer token (JWT)
+      description: "Requer usuário autenticado com role ADMIN. Usuários sem role ADMIN receberão 403 Forbidden."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatientDto'
+      responses:
+        '201':
+          description: Paciente criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientResponseDto'
+        '400':
+          description: Erro de validação (ex. telefone inválido)
+        '409':
+          description: CPF já cadastrado
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     LoginDto:
       type: object
@@ -98,10 +132,11 @@ components:
         - passwordConfirmation
       properties:
         name:
+          maxLength: 150
           type: string
         cpf:
           type: string
-          pattern: '\d{11}'
+          pattern: '^\d{11}$'
           x-field-extra-annotation: "@org.hibernate.validator.constraints.br.CPF(message = \"The provided CPF is invalid.\")"
         employeeType:
           type: string
@@ -126,3 +161,134 @@ components:
         employeeType:
           type: string
           enum: [ ADMIN, DOCTOR, NURSE, RECEPTIONIST ]
+
+    # --- DTOs DE PATIENT ---
+    CreatePatientDto:
+      type: object
+      required:
+        - name
+        - cpf
+        - phone
+      properties:
+        name:
+          type: string
+          maxLength: 150
+          example: "Fulano de Tal"
+        cpf:
+          type: string
+          pattern: '^\d{11}$'
+          x-field-extra-annotation: "@org.hibernate.validator.constraints.br.CPF(message = \"The provided CPF is invalid.\")"
+        phone:
+          type: string
+          minLength: 10
+          maxLength: 20
+          description: "Mínimo 10, máximo 20 caracteres"
+          example: "21999998888"
+        address:
+          $ref: '#/components/schemas/AddressCreateDto'
+        emergencyContact:
+          $ref: '#/components/schemas/EmergencyContactCreateDto'
+    PatientResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        cpf:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressResponseDto'
+        emergency:
+          $ref: '#/components/schemas/EmergencyContactResponseDto'
+
+    # --- DTOs DE ENDEREÇO ---
+    AddressCreateDto:
+      type: object
+      required:
+        - street
+        - neighborhood
+        - city
+        - state
+      properties:
+        zipCode:
+          type: string
+          pattern: '^\d{5}-?\d{3}$'
+          example: "24000-000"
+        street:
+          type: string
+          maxLength: 150
+          example: "Rua das Flores"
+        number:
+          type: string
+          maxLength: 20
+          example: "123"
+        complement:
+          type: string
+          maxLength: 100
+          example: "Apto 101"
+        neighborhood:
+          type: string
+          maxLength: 100
+          example: "Centro"
+        city:
+          type: string
+          maxLength: 100
+          example: "Niterói"
+        state:
+          type: string
+          pattern: '^[A-Z]{2}$'
+          example: "RJ"
+          maxLength: 2
+
+    AddressResponseDto:
+      type: object
+      properties:
+        zipCode:
+          type: string
+          example: "24000-000"
+        street:
+          type: string
+          example: "Rua das Flores"
+        number:
+          type: string
+          example: "123"
+        complement:
+          type: string
+          example: "Apto 101"
+        neighborhood:
+          type: string
+          example: "Centro"
+        city:
+          type: string
+          example: "Niterói"
+        state:
+          type: string
+          example: "RJ"
+
+    EmergencyContactCreateDto:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          minLength: 10
+          maxLength: 20
+          description: "Mínimo 10, máximo 20 caracteres"
+          example: "21999998888"
+    EmergencyContactResponseDto:
+      type: object
+      properties:
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+          minLength: 10
+          maxLength: 20
+          description: "Mínimo 10, máximo 20 caracteres"
+          example: "21999998888"
